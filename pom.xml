@@ -10,6 +10,7 @@
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <tomcat.version>10.1.60</tomcat.version>
   </properties>
   <dependencies>
     <dependency>
@@ -27,6 +28,45 @@
   <build>
     <finalName>java-web-classwork</finalName>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.cargo</groupId>
+        <artifactId>cargo-maven3-plugin</artifactId>
+        <version>1.10.17</version>
+        <configuration>
+          <container>
+            <containerId>tomcat10x</containerId>
+            <type>installed</type>
+            <artifactInstaller>
+              <groupId>org.apache.tomcat</groupId>
+              <artifactId>tomcat</artifactId>
+              <version>${tomcat.version}</version>
+              <type>zip</type>
+            </artifactInstaller>
+            <systemProperties>
+              <javaweb.dataDir>${project.basedir}/data</javaweb.dataDir>
+            </systemProperties>
+            <timeout>180000</timeout>
+          </container>
+          <configuration>
+            <type>standalone</type>
+            <home>${project.build.directory}/cargo/config</home>
+            <properties>
+              <cargo.hostname>127.0.0.1</cargo.hostname>
+              <cargo.servlet.port>8080</cargo.servlet.port>
+              <cargo.tomcat.ajp.port>8009</cargo.tomcat.ajp.port>
+              <cargo.rmi.port>8005</cargo.rmi.port>
+            </properties>
+          </configuration>
+          <deployables>
+            <deployable>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>${project.artifactId}</artifactId>
+              <type>war</type>
+              <properties><context>java-web-classwork</context></properties>
+            </deployable>
+          </deployables>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>

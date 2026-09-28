@@ -22,7 +22,7 @@
 
 ### 在地球上留言
 
-1. 拖动旋转地球，或使用键盘左右方向键旋转。
+1. 向任意方向拖动或使用触控板滚动地球，也可用键盘四个方向键旋转。
 2. 点击可见球面上的任意位置，包括海洋；键盘回车可选择球心位置。
 3. 地球通过非线性缓动旋转、放大至选中位置，显示输入面板。
 4. 输入文字，点击勾选 SVG 按钮发布。
@@ -32,7 +32,7 @@
 ### 阅读与管理留言
 
 - 打开网页后自动加载留言，在对应经纬度显示标记。
-- 悬停标记预览文字，点击打开编辑面板。
+- 球面正面的标记直接显示留言摘要；悬停可预览全文，点击打开编辑面板。地球下方列出全部留言，背面的留言也可找到。
 - 编辑已有留言时，停止输入 900ms 后自动保存，也可以手动保存。
 - 删除前在面板内确认。
 - 保存失败保留输入；多人编辑产生版本冲突时，提示重新载入。
@@ -53,7 +53,30 @@
 
 Tomcat 9 使用的 `javax.servlet` 与本项目的 `jakarta.servlet` 不兼容。在 IDEA 中可直接打开根目录并导入 `pom.xml`。
 
-### 获取并打包
+### 在 IDEA 中直接启动
+
+根目录 `package.json` 已提供完整启动入口，无需先安装 npm 根目录依赖或手动安装 Tomcat。
+
+1. 重新打开项目，让 IDEA 加载 Maven 配置；若尚未关联，在 Maven 工具窗口点击 **Link Maven Projects** 并选择根目录 `pom.xml`。
+2. 在运行配置中选择 **Java Web**，或点击根目录 `package.json` 中 `start` 旁的运行按钮。
+3. 等待构建、Tomcat 启动及离线库导入，然后访问 `http://127.0.0.1:8080/java-web-classwork/`。
+
+IDEA 启动进程的 PATH 中需要有 `mvn`、`java` 和 `npm`。首次运行需要联网下载 Maven 依赖与 Tomcat 10.1.60。
+
+| 根目录命令 | 行为 |
+| --- | --- |
+| `npm start` | Maven 构建前后端、自动准备 Tomcat、部署并持续运行 |
+| `npm run dev` | 与 `npm start` 相同，兼容原有 IDEA npm dev 配置 |
+| `npm run stop` | 停止该项目的 Tomcat |
+| `npm run build` | 仅打包 WAR |
+| `npm run dev:frontend` | 单独启动 Vite 热更新服务，需先启动后端 |
+
+完整启动模式由 Tomcat 同时提供页面和 API；修改代码后重新启动生效。需要前端热更新时，在后端已启动的情况下另开 `dev:frontend`，访问 Vite 输出的地址。
+启动和打包命令跳过测试，但会执行编译及现有前端类型检查。停止可用运行面板的停止按钮或 `npm run stop`，不要同时运行多个完整启动实例占用 8080 端口。
+
+通过这些命令启动时，数据库保存在项目根目录的 `data/messages.sqlite`，独立于 `target/` 和 Tomcat 临时配置，避免清理构建产物时丢失数据。`JAVA_WEB_DATA_DIR` 仍可覆盖该路径。
+
+### 手动获取并打包
 
 ```sh
 git clone https://github.com/superwfox/java-web-classwork.git
@@ -72,7 +95,7 @@ target/java-web-classwork.war
 将 WAR 复制到 Tomcat 的 `webapps/` 目录，启动 Tomcat，然后访问：
 
 ```text
-http://localhost:8080/java-web-classwork/
+http://127.0.0.1:8080/java-web-classwork/
 ```
 
 首次启动会自动建表，并将离线国家数据导入 SQLite；导入完成后留言 API 才可用。前端资源和 API 使用相对应用路径，支持 WAR 上下文路径部署。
@@ -213,7 +236,7 @@ GET /java-web-classwork/api/messages?after=0
 创建示例：
 
 ```sh
-curl 'http://localhost:8080/java-web-classwork/api/messages' \
+curl 'http://127.0.0.1:8080/java-web-classwork/api/messages' \
   -H 'X-Requested-With: JavaWeb' \
   --data-urlencode 'action=create' \
   --data-urlencode 'requestId=78d16d70-711a-4a60-b2b0-ec7d194e844e' \

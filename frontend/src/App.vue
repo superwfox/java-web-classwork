@@ -139,7 +139,7 @@ onBeforeUnmount(() => { disposed = true; clearTimeout(timer); window.removeEvent
       <div class="globe-stage">
         <div class="orbit orbit-one" aria-hidden="true"></div><div class="orbit orbit-two" aria-hidden="true"></div>
         <span class="coordinate coordinate-left">{{ loading ? 'CONNECTING…' : `${messages.length} MESSAGES` }}<br>ONE SHARED WORLD</span>
-        <span class="coordinate coordinate-right">CLICK TO LEAVE A NOTE<br>HOVER TO SLOW DOWN</span>
+        <span class="coordinate coordinate-right">CLICK TO LEAVE A NOTE<br>DRAG IN ANY DIRECTION</span>
         <MessageGlobe :messages="messages" :selected="selected" :locked="selected !== null"
           @pick="location => open(location)" @open="message => open(message, message)" />
         <section v-if="selected" class="message-editor" role="dialog" aria-labelledby="editor-title" :aria-busy="busy">
@@ -170,6 +170,19 @@ onBeforeUnmount(() => { disposed = true; clearTimeout(timer); window.removeEvent
       </div>
       <div class="caption"><p class="eyebrow"><span class="status-dot"></span> SMALL CODE. BIG CONNECTIONS.</p><h1 id="headline">Link the world<br>with <span>java web</span><span class="cursor" aria-hidden="true">_</span></h1></div>
       <div v-if="loadError" class="load-error" role="status">{{ loadError }} <button class="text-button" type="button" :disabled="loading" @click="load">重新载入</button></div>
+    </section>
+    <section class="message-feed" aria-labelledby="feed-title">
+      <div class="feed-heading"><p class="eyebrow">FROM AROUND THE WORLD</p><h2 id="feed-title">地球上的留言 <span>{{ messages.length }}</span></h2></div>
+      <p v-if="loading" class="feed-empty">正在加载留言…</p>
+      <p v-else-if="!messages.length && !loadError" class="feed-empty">还没有留言。点击地球上的任意位置，留下第一条。</p>
+      <div v-else class="feed-grid">
+        <button v-for="message in [...messages].reverse()" :key="message.id" class="feed-card" type="button"
+          :disabled="selected !== null" @click="open(message, message)">
+          <span class="feed-card-place">{{ countryName(message.country) }} · {{ message.latitude.toFixed(2) }}°, {{ message.longitude.toFixed(2) }}°</span>
+          <span class="feed-card-text">{{ message.text }}</span>
+          <span class="feed-card-action">查看并编辑 ↗</span>
+        </button>
+      </div>
     </section>
     <footer class="footer"><span>BUILT TO CONNECT.</span><a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP Geolocation by DB-IP</a><span>JAVA WEB / 001</span></footer>
   </main>

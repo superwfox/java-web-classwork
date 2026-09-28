@@ -12,6 +12,7 @@ public final class Database {
     public Database() throws Exception {
         Class.forName("org.sqlite.JDBC");
         String configured = System.getenv("JAVA_WEB_DATA_DIR");
+        if (configured == null || configured.isBlank()) configured = System.getProperty("javaweb.dataDir");
         Path directory = configured == null || configured.isBlank()
                 ? Path.of(System.getProperty("catalina.base", System.getProperty("user.home")), "data", "java-web-classwork")
                 : Path.of(configured);

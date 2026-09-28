@@ -19,7 +19,7 @@ let observer: ResizeObserver | undefined
 let frame = 0
 let lastTime = 0
 let velocity = 0.08
-let pointer: { id: number; x: number; startX: number; startY: number; moved: boolean } | null = null
+let pointer: { id: number; x: number; y: number; startX: number; startY: number; moved: boolean } | null = null
 let transition: { from: typeof view.value; to: typeof view.value; start: number } | null = null
 
 // Matches COBE 2's orthographic sphere (radius 0.8) and phi/theta rotation.
@@ -59,21 +59,27 @@ watch(() => props.selected, location => {
   const current = view.value
   const desired = location ? -location.longitude * radians - Math.PI / 2 : current.phi
   const difference = Math.atan2(Math.sin(desired - current.phi), Math.cos(desired - current.phi))
-  const to = { phi: current.phi + difference, theta: location ? location.latitude * radians : 0.12, scale: location ? 1.3 : 1 }
+  const desiredTheta = location ? location.latitude * radians : 0.12
+  const thetaDifference = Math.atan2(Math.sin(desiredTheta - current.theta), Math.cos(desiredTheta - current.theta))
+  const to = { phi: current.phi + difference, theta: current.theta + thetaDifference, scale: location ? 1.3 : 1 }
   if (motion.matches) { view.value = to; transition = null }
   else transition = { from: { ...current }, to, start: performance.now() }
 })
 function down(event: PointerEvent) {
   if (event.button !== 0 || props.locked || transition) return
-  pointer = { id: event.pointerId, x: event.clientX, startX: event.clientX, startY: event.clientY, moved: false }
+  pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: false }
   canvas.value?.setPointerCapture(event.pointerId)
 }
 function move(event: PointerEvent) {
   hover.value = unproject(event.clientX, event.clientY) !== null
   if (!pointer || pointer.id !== event.pointerId) return
   if (Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) > 5) pointer.moved = true
-  if (pointer.moved) view.value.phi += (event.clientX - pointer.x) * 0.005
+  if (pointer.moved) {
+    view.value.phi += (event.clientX - pointer.x) * 0.005
+    view.value.theta += (event.clientY - pointer.y) * 0.005
+  }
   pointer.x = event.clientX
+  pointer.y = event.clientY
 }
 function up(event: PointerEvent) {
   if (!pointer || pointer.id !== event.pointerId) return
@@ -87,14 +93,26 @@ function up(event: PointerEvent) {
 }
 function key(event: KeyboardEvent) {
   if (props.locked || transition) return
-  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-    event.preventDefault(); view.value.phi += event.key === 'ArrowLeft' ? -0.15 : 0.15
+  if (event.key.startsWith('Arrow')) {
+    event.preventDefault()
+    if (event.key === 'ArrowLeft') view.value.phi -= 0.15
+    if (event.key === 'ArrowRight') view.value.phi += 0.15
+    if (event.key === 'ArrowUp') view.value.theta -= 0.15
+    if (event.key === 'ArrowDown') view.value.theta += 0.15
   } else if (event.key === 'Enter' && canvas.value) {
     event.preventDefault()
     const rect = canvas.value.getBoundingClientRect()
     const location = unproject(rect.left + rect.width / 2, rect.top + rect.height / 2)
     if (location) emit('pick', location)
   }
+}
+function wheel(event: WheelEvent) {
+  if (props.locked || transition || !unproject(event.clientX, event.clientY)) return
+  event.preventDefault()
+  const factor = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 18 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? 120 : 1
+  view.value.phi += event.deltaX * factor * 0.002
+  view.value.theta += event.deltaY * factor * 0.002
+  hover.value = true
 }
 onMounted(() => {
   const element = canvas.value
@@ -138,9 +156,9 @@ onBeforeUnmount(() => { cancelAnimationFrame(frame); observer?.disconnect(); glo
 <template>
   <div ref="host" class="globe-host" @pointerleave="hover = false">
     <canvas v-show="!unavailable" ref="canvas" class="globe" tabindex="0" role="application"
-      aria-label="交互地球：拖动旋转，点击选点留言；键盘左右键旋转，回车在球心选点"
+      aria-label="交互地球：向任意方向拖动或滚动旋转，点击选点留言；方向键旋转，回车在球心选点"
       @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="pointer = null"
-      @lostpointercapture="pointer = null" @keydown="key" @focus="keyboardFocus = true" @blur="keyboardFocus = false" />
+      @lostpointercapture="pointer = null" @wheel="wheel" @keydown="key" @focus="keyboardFocus = true" @blur="keyboardFocus = false" />
     <div v-if="!unavailable" class="pin-layer">
       <template v-for="pin in pins" :key="pin.message.id">
         <button v-if="pin.visible" type="button" class="message-pin"
@@ -148,6 +166,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(frame); observer?.disconnect(); glo
           :aria-label="`查看留言：${pin.message.text}`" @pointerenter="hover = true"
           @focus="keyboardFocus = true" @blur="keyboardFocus = false" @click.stop="emit('open', pin.message)">
           <span class="pin-dot"></span>
+          <span class="pin-label">{{ pin.message.text }}</span>
           <span class="pin-preview"><span>{{ pin.message.text }}</span><small>{{ countryName(pin.message.country) }} · 点击打开</small></span>
         </button>
       </template>
