@@ -7,6 +7,14 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8080',
+        rewrite: path => '/java-web-classwork' + path,
+      },
+    },
+  },
   build: {
     outDir: '../target/frontend',
     emptyOutDir: true,

@@ -1,44 +1,240 @@
-# Java Web Classwork
+![Java Web：点阵地球与 Link the world with java web 像素标语](docs/images/hero.png)
 
-Maven 主导的 Java Web 项目，Vue 3 + TypeScript + Vite 前端位于 `frontend/`。
-首页使用 COBE 交互地球和本地 Silkscreen 像素字体。
+# Java Web · Link the world
 
-## 目录
+在地球上选一个位置，留下一段文字，与下一位访客开始对话。
 
-- `pom.xml`：统一构建入口，安装、构建前端并打包 WAR。
-- `frontend/`：前端源码及 npm 锁文件。
-- `src/main/java/`：预留 Java 后端源码目录。
-- `src/main/resources/`：预留 Java 配置目录。
-- `src/main/webapp/`：预留 Web 资源目录。
-- `target/`：前端产物和 WAR，禁止提交。
+## 项目介绍
 
-目前没有业务接口或 Java 框架依赖。后续根据课程要求添加 Servlet 或其他后端实现。
+一个交互地球留言板，使用 Vue 3 和 COBE 展示地球，通过 Java Servlet 接收请求，将留言保存到 SQLite。Maven 统一组织前后端构建，生成可部署到 Tomcat 的 WAR。
 
-## 环境
+| 部分 | 技术 |
+| --- | --- |
+| 页面与交互 | Vue 3、TypeScript、COBE、Vite |
+| HTTP 服务 | Jakarta Servlet 6、Tomcat 10.1 |
+| 数据存储 | SQLite、SQLite JDBC |
+| IP 国家／地区查询 | DB-IP Country Lite 离线数据 |
+| 构建 | Maven 调用 npm 构建前端并打包 WAR |
 
-JDK 17+、Maven 3.9+；Node.js 满足 `frontend/package.json` 中的 engines 要求，且 npm 在 PATH 中。
-在 IDEA 中打开根目录，并将 `pom.xml` 导入为 Maven 项目。
+当前实现尚未完成构建、运行和联调验证。
 
-## 开发首页
+## 功能与交互
+
+### 在地球上留言
+
+1. 拖动旋转地球，或使用键盘左右方向键旋转。
+2. 点击可见球面上的任意位置，包括海洋；键盘回车可选择球心位置。
+3. 地球通过非线性缓动旋转、放大至选中位置，显示输入面板。
+4. 输入文字，点击勾选 SVG 按钮发布。
+
+鼠标悬停在球面时，自转逐渐减速；移开后逐渐恢复。编辑期间保持暂停，并尊重系统的减少动态效果偏好。
+
+### 阅读与管理留言
+
+- 打开网页后自动加载留言，在对应经纬度显示标记。
+- 悬停标记预览文字，点击打开编辑面板。
+- 编辑已有留言时，停止输入 900ms 后自动保存，也可以手动保存。
+- 删除前在面板内确认。
+- 保存失败保留输入；多人编辑产生版本冲突时，提示重新载入。
+
+项目不设登录和作者权限，**所有访客都可以编辑、删除任何留言**。发布时由后端记录请求 IP，页面仅展示解析出的国家／地区，不公开原始 IP。留言坐标由用户点击决定，与 IP 所在地无关。
+
+## 快速开始
+
+### 环境要求
+
+| 工具 | 要求 |
+| --- | --- |
+| Java | JDK 17 或更高版本 |
+| Maven | 3.9 或更高版本 |
+| Tomcat | 10.1.x，对应 Jakarta Servlet 6 |
+| Node.js | `^22.18.0` 或 `>=24.12.0` |
+| npm | 已安装且在 PATH 中可用 |
+
+Tomcat 9 使用的 `javax.servlet` 与本项目的 `jakarta.servlet` 不兼容。在 IDEA 中可直接打开根目录并导入 `pom.xml`。
+
+### 获取并打包
 
 ```sh
-cd frontend
-npm ci
-npm run dev
-```
-
-## 统一打包
-
-```sh
+git clone https://github.com/superwfox/java-web-classwork.git
+cd java-web-classwork
 mvn clean package
 ```
 
-Maven 依次运行 `npm ci`、`npm run build`（含 TypeScript 检查）和 WAR 打包。
-产物为 `target/java-web-classwork.war`，可部署到兼容的 Tomcat 容器。
-默认访问 `/java-web-classwork/`；前端资源使用相对路径，可适配 WAR 上下文路径。
-Maven 不负责自动安装 Node.js 或启动 Tomcat。
+Maven 依次执行前端依赖安装、前端构建（包含 TypeScript 检查）和 WAR 打包，生成：
 
-## 字体
+```text
+target/java-web-classwork.war
+```
 
-Silkscreen © The Silkscreen Project Authors，使用 SIL Open Font License 1.1。
-字体与许可证位于 `frontend/public/fonts/`，运行时无需请求外部字体服务。
+### 部署到 Tomcat
+
+将 WAR 复制到 Tomcat 的 `webapps/` 目录，启动 Tomcat，然后访问：
+
+```text
+http://localhost:8080/java-web-classwork/
+```
+
+首次启动会自动建表，并将离线国家数据导入 SQLite；导入完成后留言 API 才可用。前端资源和 API 使用相对应用路径，支持 WAR 上下文路径部署。
+
+## 项目结构与职责
+
+代码按业务对象组织，留言功能集中在 `message/`，共享数据库和地域查询各自独立。
+
+```text
+java-web-classwork/
+├── pom.xml
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── src/
+│       ├── App.vue
+│       ├── components/MessageGlobe.vue
+│       └── message/api.ts
+├── src/main/
+│   ├── java/com/example/javaweb/
+│   │   ├── message/
+│   │   │   ├── Message.java
+│   │   │   ├── MessageServlet.java
+│   │   │   ├── MessageService.java
+│   │   │   └── MessageRepository.java
+│   │   ├── geo/IpRegionRepository.java
+│   │   └── database/Database.java
+│   └── resources/
+│       ├── db/schema.sql
+│       └── geo/
+└── docs/images/hero.png
+```
+
+| 文件 | 职责 |
+| --- | --- |
+| `App.vue` | 留言面板、保存状态、编辑与删除交互 |
+| `MessageGlobe.vue` | 地球动画、经纬度投影与反算、留言标记 |
+| `message/api.ts` | 前端请求、留言类型、国家名称显示 |
+| `MessageServlet` | HTTP 参数与响应、请求格式和大小限制 |
+| `MessageService` | 文字与坐标校验、协调地域查询及留言操作 |
+| `MessageRepository` | 留言 SQL、幂等创建、版本条件更新与删除 |
+| `Message` | 对外返回的留言数据对象 |
+| `IpRegionRepository` | 离线 IP 数据导入及国家查询 |
+| `Database` | SQLite 连接、建表、WAL 与等待超时配置 |
+
+```mermaid
+flowchart LR
+    A[Vue 页面] --> B[Tomcat / MessageServlet]
+    B --> C[MessageService]
+    C --> D[MessageRepository]
+    C --> E[IpRegionRepository]
+    D --> F[(SQLite)]
+    E --> F
+```
+
+## 数据与配置
+
+### 留言数据
+
+| 字段 | 含义 |
+| --- | --- |
+| `id` | 留言 ID |
+| `text` | 纯文本，1–1000 个 UTF-16 代码单元 |
+| `latitude` / `longitude` | 点击位置的纬度和经度 |
+| `country` | 发布 IP 对应的国家／地区代码；未知时为空 |
+| `createdAt` / `updatedAt` | UTC 时间，ISO 8601 格式 |
+| `version` | 编辑和删除时使用的并发版本号 |
+| `source_ip` | 原始发布 IP，仅存储在后端 |
+| `request_id` | 创建请求幂等键，仅存储在后端 |
+
+前端按纯文本渲染留言。经纬度范围分别为 `[-90, 90]` 和 `[-180, 180]`。
+
+### SQLite 存储
+
+默认数据库位置为：
+
+```text
+${catalina.base}/data/java-web-classwork/messages.sqlite
+```
+
+数据位于 WAR 外部，重新部署时保留。Tomcat 进程需要对该目录有写入权限。
+
+| 环境变量 | 用途 | 默认行为 |
+| --- | --- | --- |
+| `JAVA_WEB_DATA_DIR` | 指定数据库所在目录 | 使用上述 Tomcat 数据目录 |
+| `JAVA_WEB_GEO_FILE` | 指定离线国家库 CSV.GZ 的绝对路径 | 使用 WAR 内置快照 |
+
+环境变量需配置到 **Tomcat 进程**。备份时停止 Tomcat，或使用 SQLite 在线备份；WAL 运行期间不能只复制主数据库文件。
+
+### IP 与离线国家数据
+
+后端从 `request.getRemoteAddr()` 取得 IP，不直接信任客户端提交的 IP 或 `X-Forwarded-For`。如果使用反向代理，应在 Tomcat 配置 RemoteIpValve，并仅信任实际代理地址，否则记录的是代理 IP。
+
+国家查询支持 IPv4 和 IPv6，请求期间不访问外部定位 API。回环、内网或无法识别的地址显示“未知地域”，定位结果仅作近似参考。
+
+更新离线库时，下载新的 Country Lite **CSV.GZ**，设置 `JAVA_WEB_GEO_FILE` 后重启 Tomcat。文件路径或修改时间变化会触发事务内重新导入；历史留言保留发布时的国家信息。数据来源及快照信息见 [geo/NOTICE.md](src/main/resources/geo/NOTICE.md)。
+
+## API 说明
+
+基址：`<应用上下文>/api/messages`。
+
+### 查询留言
+
+```http
+GET /java-web-classwork/api/messages?after=0
+```
+
+每页最多 200 条，按 ID 升序排列。使用响应中的 `next` 作为下一次请求的 `after`，直到 `next` 为 `null`。
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "text": "Hello, world!",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "country": "SG",
+      "createdAt": "2026-09-28T08:00:00Z",
+      "updatedAt": "2026-09-28T08:00:00Z",
+      "version": 1
+    }
+  ],
+  "next": null
+}
+```
+
+### 创建、编辑与删除
+
+统一使用 POST，表单编码为 `application/x-www-form-urlencoded`，请求头携带 `X-Requested-With: JavaWeb`。浏览器通过同源请求访问，服务端不开放跨域。
+
+| 操作 | 表单参数 | 成功响应 |
+| --- | --- | --- |
+| `action=create` | `requestId`（UUID）、`text`、`latitude`、`longitude` | 201，留言对象 |
+| `action=update` | `id`、`version`、`text` | 200，更新后的留言对象 |
+| `action=delete` | `id`、`version` | 204，无响应体 |
+
+创建示例：
+
+```sh
+curl 'http://localhost:8080/java-web-classwork/api/messages' \
+  -H 'X-Requested-With: JavaWeb' \
+  --data-urlencode 'action=create' \
+  --data-urlencode 'requestId=78d16d70-711a-4a60-b2b0-ec7d194e844e' \
+  --data-urlencode 'text=Hello, world!' \
+  --data-urlencode 'latitude=1.35' \
+  --data-urlencode 'longitude=103.82'
+```
+
+每条新留言使用新的 UUID；重试同一次创建请求时复用原 UUID，避免重复记录。编辑或删除时携带最近获取的 `version`；编辑成功后使用响应中的新版本号。
+
+### 错误响应
+
+```json
+{ "error": "留言已被他人修改或删除，请重新载入" }
+```
+
+| 状态码 | 含义 |
+| --- | --- |
+| 400 | 参数、文字或坐标不合法 |
+| 403 | 缺少约定请求头，或请求来自跨站页面 |
+| 409 | 留言版本冲突，或目标已被删除 |
+| 413 | 请求体超过 16 KiB |
+| 415 | 请求内容类型不受支持 |
+| 500 | 数据库或服务端操作失败 |

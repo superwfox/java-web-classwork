@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS messages (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ request_id TEXT NOT NULL UNIQUE,
+ text TEXT NOT NULL CHECK(length(text) BETWEEN 1 AND 1000),
+ latitude REAL NOT NULL CHECK(latitude BETWEEN -90 AND 90),
+ longitude REAL NOT NULL CHECK(longitude BETWEEN -180 AND 180),
+ source_ip TEXT NOT NULL,
+ country TEXT NOT NULL,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL,
+ version INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS ip_regions (
+ family INTEGER NOT NULL,
+ ip_start TEXT NOT NULL,
+ ip_end TEXT NOT NULL,
+ country TEXT NOT NULL,
+ PRIMARY KEY (family, ip_start)
+) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);

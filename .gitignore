@@ -39,3 +39,9 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Local persistent application data
+/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
