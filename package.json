@@ -4,7 +4,7 @@
   "private": true,
   "description": "IDEA entry points for the Maven and Tomcat application",
   "scripts": {
-    "start": "mvn -Dmaven.test.skip=true package cargo:run",
+    "start": "node scripts/start.mjs",
     "dev": "npm run start",
     "stop": "mvn cargo:stop",
     "build": "mvn -Dmaven.test.skip=true package",

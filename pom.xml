@@ -52,7 +52,7 @@
             <home>${project.build.directory}/cargo/config</home>
             <properties>
               <cargo.hostname>127.0.0.1</cargo.hostname>
-              <cargo.servlet.port>8080</cargo.servlet.port>
+              <cargo.servlet.port>8081</cargo.servlet.port>
               <cargo.tomcat.ajp.port>8009</cargo.tomcat.ajp.port>
               <cargo.rmi.port>8005</cargo.rmi.port>
             </properties>
